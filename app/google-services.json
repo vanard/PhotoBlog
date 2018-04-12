@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "370329184286",
+    "firebase_url": "https://tutorialphotoblog.firebaseio.com",
+    "project_id": "tutorialphotoblog",
+    "storage_bucket": "tutorialphotoblog.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:370329184286:android:86e198499e9bf43a",
+        "android_client_info": {
+          "package_name": "com.tutorial.vanard.photoblog"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "370329184286-dogi3b4nenhe5800fggove7d3parv6ln.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tutorial.vanard.photoblog",
+            "certificate_hash": "a5bcb7e614bfd4516fa534a93a8d7e3735e12a25"
+          }
+        },
+        {
+          "client_id": "370329184286-sksvl4dbn889842eisg7f2jltg2gig85.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA_X7GWpjkBwmznkbYfKqZW9kurYizxNNk"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "370329184286-sksvl4dbn889842eisg7f2jltg2gig85.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
