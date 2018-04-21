@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 import id.zelory.compressor.Compressor;
@@ -129,7 +128,7 @@ public class NewPostActivity extends AppCompatActivity {
                                     compressorImageFile = new Compressor(NewPostActivity.this)
                                             .setMaxHeight(100)
                                             .setMaxWidth(100)
-                                            .setQuality(3)
+                                            .setQuality(2)
                                             .compressToBitmap(newThumbFile);
                                 } catch (IOException e) {
                                     e.printStackTrace();

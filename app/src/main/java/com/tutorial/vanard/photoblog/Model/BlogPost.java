@@ -1,7 +1,5 @@
 package com.tutorial.vanard.photoblog.Model;
 
-import com.tutorial.vanard.photoblog.BlogPostId;
-
 import java.util.Date;
 
 public class BlogPost extends com.tutorial.vanard.photoblog.BlogPostId {

@@ -2,6 +2,7 @@ package com.tutorial.vanard.photoblog;
 
 
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -9,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -19,6 +22,7 @@ import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.tutorial.vanard.photoblog.Adapter.BlogRecyclerAdapter;
 import com.tutorial.vanard.photoblog.Model.BlogPost;
+import com.tutorial.vanard.photoblog.Model.User;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +35,7 @@ public class HomeFragment extends Fragment {
 
     private RecyclerView blogListView;
     private List<BlogPost> blogList;
+    private List<User> userList;
 
     private FirebaseFirestore firebaseFirestore;
     private FirebaseAuth mAuth;
@@ -50,11 +55,12 @@ public class HomeFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
         blogList = new ArrayList<>();
+        userList = new ArrayList<>();
         blogListView = view.findViewById(R.id.blog_list_view);
 
         mAuth = FirebaseAuth.getInstance();
 
-        blogRecyclerAdapter = new BlogRecyclerAdapter(blogList);
+        blogRecyclerAdapter = new BlogRecyclerAdapter(blogList, userList);
         blogListView.setLayoutManager(new LinearLayoutManager(container.getContext()));
         blogListView.setAdapter(blogRecyclerAdapter);
         blogListView.setHasFixedSize(true);
@@ -85,18 +91,33 @@ public class HomeFragment extends Fragment {
                         if (isFirstPageFirstLoad) {
                             lastVisible = documentSnapshots.getDocuments().get(documentSnapshots.size() - 1);
                             blogList.clear();
+                            userList.clear();
                         }
                         for (DocumentChange doc : documentSnapshots.getDocumentChanges()) {
                             if (doc.getType() == DocumentChange.Type.ADDED) {
                                 String blogPostId = doc.getDocument().getId();
-                                BlogPost blogPost = doc.getDocument().toObject(BlogPost.class).withId(blogPostId);
+                                final BlogPost blogPost = doc.getDocument().toObject(BlogPost.class).withId(blogPostId);
 
-                                if (isFirstPageFirstLoad) {
-                                    blogList.add(blogPost);
-                                } else {
-                                    blogList.add(0, blogPost);
-                                }
-                                blogRecyclerAdapter.notifyDataSetChanged();
+                                String blogUserId = doc.getDocument().getString("user_id");
+                                firebaseFirestore.collection("Users").document(blogUserId).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()){
+
+                                            User user = task.getResult().toObject(User.class);
+
+                                            if (isFirstPageFirstLoad) {
+                                                userList.add(user);
+                                                blogList.add(blogPost);
+                                            } else {
+                                                userList.add(0, user);
+                                                blogList.add(0, blogPost);
+                                            }
+                                            blogRecyclerAdapter.notifyDataSetChanged();
+
+                                        }
+                                    }
+                                });
                             }
                         }
                         isFirstPageFirstLoad = false;
@@ -124,10 +145,24 @@ public class HomeFragment extends Fragment {
                         for (DocumentChange doc : documentSnapshots.getDocumentChanges()) {
                             if (doc.getType() == DocumentChange.Type.ADDED) {
                                 String blogPostId = doc.getDocument().getId();
-                                BlogPost blogPost = doc.getDocument().toObject(BlogPost.class).withId(blogPostId);
-                                blogList.add(blogPost);
+                                final BlogPost blogPost = doc.getDocument().toObject(BlogPost.class).withId(blogPostId);
+                                String blogUserId = doc.getDocument().getString("user_id");
 
-                                blogRecyclerAdapter.notifyDataSetChanged();
+                                firebaseFirestore.collection("Users").document(blogUserId).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                                    @Override
+                                    public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                                        if (task.isSuccessful()){
+
+                                            User user = task.getResult().toObject(User.class);
+
+                                            userList.add(user);
+                                            blogList.add(blogPost);
+
+                                            blogRecyclerAdapter.notifyDataSetChanged();
+
+                                        }
+                                    }
+                                });
                             }
                         }
                     }

@@ -50,9 +50,9 @@ public class MainActivity extends AppCompatActivity {
 
         getSupportActionBar().setTitle("Photo Blog");
 
-        mainBottomNav = findViewById(R.id.mainButtomNav);
-
         if (mAuth.getCurrentUser() != null) {
+            mainBottomNav = findViewById(R.id.mainButtomNav);
+
             //Fragment
             homeFragment = new HomeFragment();
             notificationFragment = new NotificationFragment();
@@ -70,11 +70,11 @@ public class MainActivity extends AppCompatActivity {
                         case R.id.bottom_action_home:
                             replaceFragment(homeFragment, currentFragment);
                             return true;
-                        case R.id.bottom_action_notif:
-                            replaceFragment(notificationFragment, currentFragment);
-                            return true;
                         case R.id.bottom_action_account:
                             replaceFragment(accountFragment, currentFragment);
+                            return true;
+                        case R.id.bottom_action_notif:
+                            replaceFragment(notificationFragment, currentFragment);
                             return true;
                         default:
                             return false;
@@ -160,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
         fragmentTransaction.add(R.id.main_container, notificationFragment);
         fragmentTransaction.add(R.id.main_container, accountFragment);
 
+        fragmentTransaction.show(homeFragment);
         fragmentTransaction.hide(notificationFragment);
         fragmentTransaction.hide(accountFragment);
 
@@ -172,14 +173,15 @@ public class MainActivity extends AppCompatActivity {
             fragmentTransaction.hide(accountFragment);
             fragmentTransaction.hide(notificationFragment);
         }
-        if (fragment == notificationFragment){
-            fragmentTransaction.hide(homeFragment);
-            fragmentTransaction.hide(accountFragment);
-        }
         if (fragment == accountFragment){
             fragmentTransaction.hide(homeFragment);
             fragmentTransaction.hide(notificationFragment);
         }
+        if (fragment == notificationFragment){
+            fragmentTransaction.hide(homeFragment);
+            fragmentTransaction.hide(accountFragment);
+        }
+
         fragmentTransaction.show(fragment);
 
 //        fragmentTransaction.replace(R.id.main_container, fragment);

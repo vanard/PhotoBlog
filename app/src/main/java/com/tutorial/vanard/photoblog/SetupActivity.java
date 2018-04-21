@@ -64,10 +64,10 @@ public class SetupActivity extends AppCompatActivity {
         getSupportActionBar().setTitle("Account Setup");
 
         mAuth = FirebaseAuth.getInstance();
+        user_id = mAuth.getCurrentUser().getUid();
+
         firebaseFirestore = FirebaseFirestore.getInstance();
         storageReference = FirebaseStorage.getInstance().getReference();
-
-        user_id = mAuth.getCurrentUser().getUid();
 
         setupImage = findViewById(R.id.setup_image);
         setupName = findViewById(R.id.setup_name);

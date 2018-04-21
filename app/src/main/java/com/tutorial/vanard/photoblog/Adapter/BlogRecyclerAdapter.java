@@ -8,6 +8,7 @@ import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,6 +16,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.DocumentSnapshot;
@@ -25,6 +27,7 @@ import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.tutorial.vanard.photoblog.CommentsActivity;
 import com.tutorial.vanard.photoblog.Model.BlogPost;
+import com.tutorial.vanard.photoblog.Model.User;
 import com.tutorial.vanard.photoblog.R;
 
 import java.util.Date;
@@ -39,13 +42,15 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
     public final static String TAG = BlogRecyclerAdapter.class.getSimpleName();
 
     public List<BlogPost> blogList;
+    public List<User> userList;
     public Context context;
 
     private FirebaseFirestore firebaseFirestore;
     private FirebaseAuth mAuth;
 
-    public BlogRecyclerAdapter(List<BlogPost> blogList){
+    public BlogRecyclerAdapter(List<BlogPost> blogList, List<User> userList) {
         this.blogList = blogList;
+        this.userList = userList;
     }
 
     @Override
@@ -59,7 +64,7 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
     }
 
     @Override
-    public void onBindViewHolder(final BlogRecyclerAdapter.ViewHolder holder, int position) {
+    public void onBindViewHolder(final BlogRecyclerAdapter.ViewHolder holder, final int position) {
         holder.setIsRecyclable(false);
 
         final String blogPostId = blogList.get(position).BlogPostId;
@@ -72,22 +77,18 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
         String thumbUri = blogList.get(position).getImage_thumb();
         holder.setBlogImage(imageUrl, thumbUri);
 
-        String user_id = blogList.get(position).getUser_id();
-        //user data will be retrieved
-        firebaseFirestore.collection("Users").document(user_id).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
-            @Override
-            public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()){
-                    String userName = task.getResult().getString("name");
-                    String userImage = task.getResult().getString("image");
+        String blog_user_id = blogList.get(position).getUser_id();
 
-                    holder.setUserData(userName, userImage);
-                }else{
-                    String e = task.getException().getMessage();
-                    Toast.makeText(context, "Error : " + e, Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+        if (blog_user_id.equals(currentUserId)){
+            holder.blogDeleteBtn.setEnabled(true);
+            holder.blogDeleteBtn.setVisibility(View.VISIBLE);
+        }
+
+        //user data will be retrieved
+        String userName = userList.get(position).getName();
+        String userImage = userList.get(position).getImage();
+
+        holder.setUserData(userName, userImage);
 
         long milliseconds = blogList.get(position).getTimestamp().getTime();
         String dateString = DateFormat.format("MM/dd/yyyy", new Date(milliseconds)).toString();
@@ -143,15 +144,24 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
                 context.startActivity(i);
             }
         });
+
+        holder.blogDeleteBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                firebaseFirestore.collection("Posts").document(blogPostId).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        blogList.remove(position);
+                        userList.remove(position);
+                    }
+                });
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        if (blogList != null){
-            return blogList.size();
-        }else{
-            return 0;
-        }
+        return blogList.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -162,13 +172,15 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
         private ImageView blogImageView, blogLikeBtn, blogCommentBtn;
         private CircleImageView blogUserImage;
 
+        private Button blogDeleteBtn;
+
         public ViewHolder(View itemView) {
             super(itemView);
             mView = itemView;
 
             blogLikeBtn = mView.findViewById(R.id.blog_like_btn);
             blogCommentBtn = mView.findViewById(R.id.blog_comment_icon);
-
+            blogDeleteBtn = mView.findViewById(R.id.blog_delete_btn);
         }
 
         public void setDescText(String descText){
