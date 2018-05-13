@@ -19,11 +19,13 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentChange;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.tutorial.vanard.photoblog.CommentsActivity;
 import com.tutorial.vanard.photoblog.Model.BlogPost;
@@ -45,10 +47,11 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
     public List<User> userList;
     public Context context;
 
-    private FirebaseFirestore firebaseFirestore;
+    private FirebaseFirestore db;
     private FirebaseAuth mAuth;
 
-    public BlogRecyclerAdapter(List<BlogPost> blogList, List<User> userList) {
+    public BlogRecyclerAdapter(Context context, List<BlogPost> blogList, List<User> userList) {
+        this.context = context;
         this.blogList = blogList;
         this.userList = userList;
     }
@@ -57,7 +60,7 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
     public BlogRecyclerAdapter.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.blog_list_item, parent, false);
         context = parent.getContext();
-        firebaseFirestore = FirebaseFirestore.getInstance();
+        db = FirebaseFirestore.getInstance();
         mAuth = FirebaseAuth.getInstance();
 
         return new ViewHolder(view);
@@ -65,19 +68,22 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
 
     @Override
     public void onBindViewHolder(final BlogRecyclerAdapter.ViewHolder holder, final int position) {
+        BlogPost blogPost = blogList.get(position);
+        User user = userList.get(position);
+
         holder.setIsRecyclable(false);
 
-        final String blogPostId = blogList.get(position).BlogPostId;
+        final String blogPostId = blogPost.BlogPostId;
         final String currentUserId = mAuth.getCurrentUser().getUid();
 
-        String descData = blogList.get(position).getDesc();
+        String descData = blogPost.getDesc();
         holder.setDescText(descData);
 
-        String imageUrl = blogList.get(position).getImage_url();
-        String thumbUri = blogList.get(position).getImage_thumb();
+        String imageUrl = blogPost.getImage_url();
+        String thumbUri = blogPost.getImage_thumb();
         holder.setBlogImage(imageUrl, thumbUri);
 
-        String blog_user_id = blogList.get(position).getUser_id();
+        String blog_user_id = blogPost.getUser_id();
 
         if (blog_user_id.equals(currentUserId)){
             holder.blogDeleteBtn.setEnabled(true);
@@ -85,17 +91,31 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
         }
 
         //user data will be retrieved
-        String userName = userList.get(position).getName();
-        String userImage = userList.get(position).getImage();
+        String userName = user.getName();
+        String userImage = user.getImage();
 
         holder.setUserData(userName, userImage);
 
-        long milliseconds = blogList.get(position).getTimestamp().getTime();
-        String dateString = DateFormat.format("MM/dd/yyyy", new Date(milliseconds)).toString();
-        holder.setTime(dateString);
+        db.collection("Posts").orderBy("timestamp", Query.Direction.DESCENDING).limit(1)
+        .addSnapshotListener(new EventListener<QuerySnapshot>() {
+            @Override
+            public void onEvent(QuerySnapshot documentSnapshots, FirebaseFirestoreException e) {
+                for (DocumentChange doc : documentSnapshots.getDocumentChanges()){
+                    BlogPost blogDoc = doc.getDocument().toObject(BlogPost.class);
+
+                    try{
+                        long milliseconds = blogDoc.getTimestamp().getTime();
+                        String dateString = DateFormat.format("MM/dd/yyyy", new Date(milliseconds)).toString();
+                        holder.setTime(dateString);
+                    }catch (Exception ex){
+
+                    }
+                }
+            }
+        });
 
         //Get likes count
-        firebaseFirestore.collection("Posts/" + blogPostId + "/Likes").addSnapshotListener(new EventListener<QuerySnapshot>() {
+        db.collection("Posts/" + blogPostId + "/Likes").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
             public void onEvent(QuerySnapshot documentSnapshots, FirebaseFirestoreException e) {
                 if (!documentSnapshots.isEmpty()){
@@ -107,7 +127,7 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
             }
         });
         //Get likes
-        firebaseFirestore.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).addSnapshotListener(new EventListener<DocumentSnapshot>() {
+        db.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).addSnapshotListener(new EventListener<DocumentSnapshot>() {
             @Override
             public void onEvent(DocumentSnapshot documentSnapshot, FirebaseFirestoreException e) {
                 if (documentSnapshot.exists()){
@@ -121,15 +141,15 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
         holder.blogLikeBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                firebaseFirestore.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                db.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                     @Override
                     public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                         if (!task.getResult().exists()){
                             Map<String, Object> likesMap = new HashMap<>();
                             likesMap.put("timestamp", FieldValue.serverTimestamp());
-                            firebaseFirestore.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).set(likesMap);
+                            db.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).set(likesMap);
                         }else{
-                            firebaseFirestore.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).delete();
+                            db.collection("Posts/" + blogPostId + "/Likes").document(currentUserId).delete();
                         }
                     }
                 });
@@ -148,13 +168,17 @@ public class BlogRecyclerAdapter extends RecyclerView.Adapter<BlogRecyclerAdapte
         holder.blogDeleteBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                firebaseFirestore.collection("Posts").document(blogPostId).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
-                        blogList.remove(position);
-                        userList.remove(position);
-                    }
-                });
+                try{
+                    db.collection("Posts").document(blogPostId).delete().addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            blogList.remove(position);
+                            userList.remove(position);
+                        }
+                    });
+                }catch (Exception e){
+                    Toast.makeText(context, "Exception : " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
         });
     }

@@ -81,8 +81,7 @@ public class NewPostActivity extends AppCompatActivity {
             public void onClick(View view) {
                 CropImage.activity()
                         .setGuidelines(CropImageView.Guidelines.ON)
-                        .setMinCropResultSize(512, 512)
-                        .setAspectRatio(1, 1)
+                        .setMinCropResultSize(256, 256)
                         .start(NewPostActivity.this);
             }
         });
